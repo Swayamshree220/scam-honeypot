@@ -2,21 +2,24 @@ from functools import wraps
 from flask import request, jsonify
 import os
 
-API_KEY = os.getenv('API_KEY', 'scam-honeypot-secret-key-12345')
+API_KEY = os.getenv('API_KEY', 'scam-honeypot-secret-key-12345').strip()
 
 # DEBUG: Print the API key on startup
-print(f"🔑 Backend expecting API_KEY: {API_KEY}")
+print(f"🔑 Backend expecting API_KEY: '{API_KEY}'")
+print(f"🔑 API_KEY length: {len(API_KEY)}")
 
 def require_api_key(f):
     """Decorator to require API key for endpoints"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Check for API key in headers
-        api_key = request.headers.get('X-API-Key')
+        api_key = request.headers.get('X-API-Key', '').strip()  # Add .strip() here too
         
         # DEBUG
-        print(f"🔍 Received API key: {api_key}")
-        print(f"🔍 Expected API key: {API_KEY}")
+        print(f"🔍 Received API key: '{api_key}'")
+        print(f"🔍 Received key length: {len(api_key)}")
+        print(f"🔍 Expected API key: '{API_KEY}'")
+        print(f"🔍 Expected key length: {len(API_KEY)}")
         print(f"🔍 Match: {api_key == API_KEY}")
         
         if not api_key:
