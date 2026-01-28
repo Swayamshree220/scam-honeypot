@@ -11,7 +11,15 @@ class Config:
     DEBUG = os.getenv('FLASK_DEBUG', 'True') == 'True'
     
     # Groq (FREE & FAST)
-    GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+    # Try both ways to get the API key
+    GROQ_API_KEY = os.getenv('GROQ_API_KEY') or os.environ.get('GROQ_API_KEY')
+    
+    # Add a check to make sure we have the key
+    if not GROQ_API_KEY:
+        print("❌ ERROR: GROQ_API_KEY is not set!")
+    else:
+        print(f"✅ GROQ_API_KEY loaded: {GROQ_API_KEY[:10]}...")
+    
     GROQ_MODEL = 'llama-3.1-70b-versatile'  # Fast and smart
     
     # API Security
