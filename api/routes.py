@@ -55,13 +55,39 @@ def process_message():
     """
     data = request.json
     
-    if not data or 'message' not in data:
+    # Handle empty test requests (for connection testing)
+    if not data:
         return jsonify({
-            'error': 'Missing required field',
-            'message': 'Request body must include "message" field'
-        }), 400
+            'status': 'success',
+            'message': 'Scam Honeypot API is running',
+            'service': 'Scam Detection & Intelligence Extraction',
+            'version': '1.0.0',
+            'endpoints': {
+                'process_message': '/api/process-message',
+                'autonomous_engage': '/api/autonomous-engage',
+                'stats': '/api/stats'
+            }
+        }), 200
+    
+    # Handle test requests without message field
+    if 'message' not in data:
+        return jsonify({
+            'status': 'success',
+            'message': 'API connection successful! Send a "message" field to analyze scams.',
+            'example': {
+                'message': 'Congratulations! You won Rs 10 lakhs. Send bank details...'
+            }
+        }), 200
     
     message = data.get('message', '')
+    
+    # Handle empty message
+    if not message or not message.strip():
+        return jsonify({
+            'status': 'success',
+            'message': 'API is working. Please provide a non-empty message to analyze.'
+        }), 200
+    
     conv_id = data.get('conversation_id') or f'conv_{uuid.uuid4().hex[:8]}'
     auto_engage = data.get('auto_engage', False)
     
