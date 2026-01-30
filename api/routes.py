@@ -23,7 +23,33 @@ def health_check():
         'version': '1.0.0'
     })
 
-@api_bp.route('/process-message', methods=['POST'])
+@api_bp.route('/test', methods=['GET', 'POST', 'OPTIONS'])
+def test_endpoint():
+    """Fast test endpoint for connection testing - works with any method"""
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', '*')
+        return response, 200
+    
+    # Return success response
+    response_data = {
+        'status': 'success',
+        'message': 'Connection successful! Scam Honeypot API is ready.',
+        'service': 'Scam Detection & Intelligence Extraction',
+        'version': '1.0.0',
+        'timestamp': str(datetime.now()),
+        'healthy': True,
+        'ready': True
+    }
+    
+    response = jsonify(response_data)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response, 200
+
+@api_bp.route('/process-message', methods=['POST', 'OPTIONS'])
 @require_api_key
 def process_message():
     """
@@ -54,6 +80,14 @@ def process_message():
             "conversation_length": 3
         }
     """
+    # Handle CORS preflight
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', '*')
+        return response, 200
+    
     data = request.json
     
     # Handle empty test requests (for connection testing)
@@ -63,10 +97,13 @@ def process_message():
             'message': 'Scam Honeypot API is running',
             'service': 'Scam Detection & Intelligence Extraction',
             'version': '1.0.0',
+            'healthy': True,
+            'ready': True,
             'endpoints': {
                 'process_message': '/api/process-message',
                 'autonomous_engage': '/api/autonomous-engage',
-                'stats': '/api/stats'
+                'stats': '/api/stats',
+                'test': '/api/test'
             }
         }), 200
     
@@ -75,6 +112,8 @@ def process_message():
         return jsonify({
             'status': 'success',
             'message': 'API connection successful! Send a "message" field to analyze scams.',
+            'healthy': True,
+            'ready': True,
             'example': {
                 'message': 'Congratulations! You won Rs 10 lakhs. Send bank details...'
             }
@@ -82,11 +121,25 @@ def process_message():
     
     message = data.get('message', '')
     
-    # Handle empty message
+    # Handle empty message - FAST RESPONSE
     if not message or not message.strip():
         return jsonify({
             'status': 'success',
-            'message': 'API is working. Please provide a non-empty message to analyze.'
+            'message': 'API is working. Please provide a non-empty message to analyze.',
+            'healthy': True,
+            'ready': True
+        }), 200
+    
+    # Check if this is a test/ping message - FAST RESPONSE
+    test_keywords = ['test', 'ping', 'hello', 'check']
+    if any(keyword in message.lower() for keyword in test_keywords) and len(message) < 20:
+        return jsonify({
+            'status': 'success',
+            'message': 'API is working! This appears to be a test message.',
+            'healthy': True,
+            'ready': True,
+            'service': 'Scam Detection & Intelligence Extraction',
+            'note': 'Send a real scam message for full analysis'
         }), 200
     
     conv_id = data.get('conversation_id') or f'conv_{uuid.uuid4().hex[:8]}'
@@ -288,18 +341,7 @@ def get_stats():
             'total_intel_items': total_intel,
             'scam_types_breakdown': scam_types,
             'avg_turns_per_conversation': sum(
-                len(c.get('history', [])) for c in all_convs
+                len(c.get('history', [])) for c in all_convs)
             ) / max(len(all_convs), 1)
         }
     })
-
-@api_bp.route('/test', methods=['GET', 'POST'])
-def test_endpoint():
-    """Fast test endpoint for connection testing - works with any method"""
-    return jsonify({
-        'status': 'success',
-        'message': 'Connection successful! Scam Honeypot API is ready.',
-        'service': 'Scam Detection & Intelligence Extraction',
-        'version': '1.0.0',
-        'timestamp': str(datetime.now())
-    }), 200
