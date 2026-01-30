@@ -334,14 +334,16 @@ def get_stats():
         scam_type = conv.get('scam_type', 'unknown')
         scam_types[scam_type] = scam_types.get(scam_type, 0) + 1
     
+    # Calculate average turns
+    total_turns = sum(len(c.get('history', [])) for c in all_convs)
+    avg_turns = total_turns / max(len(all_convs), 1)
+    
     return jsonify({
         'status': 'success',
         'stats': {
             **stats,
             'total_intel_items': total_intel,
             'scam_types_breakdown': scam_types,
-            'avg_turns_per_conversation': sum(
-                len(c.get('history', [])) for c in all_convs)
-            ) / max(len(all_convs), 1)
+            'avg_turns_per_conversation': avg_turns
         }
     })
