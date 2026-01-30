@@ -5,6 +5,7 @@ from personas.ramesh import RameshPersona
 from storage.memory_store import conversation_store
 from .mock_scammer import mock_scammer_api
 from utils.auth import require_api_key
+from datetime import datetime
 import uuid
 
 api_bp = Blueprint('api', __name__)
@@ -291,3 +292,14 @@ def get_stats():
             ) / max(len(all_convs), 1)
         }
     })
+
+@api_bp.route('/test', methods=['GET', 'POST'])
+def test_endpoint():
+    """Fast test endpoint for connection testing - works with any method"""
+    return jsonify({
+        'status': 'success',
+        'message': 'Connection successful! Scam Honeypot API is ready.',
+        'service': 'Scam Detection & Intelligence Extraction',
+        'version': '1.0.0',
+        'timestamp': str(datetime.now())
+    }), 200
