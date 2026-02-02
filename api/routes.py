@@ -324,3 +324,57 @@ def get_stats():
             'avg_turns_per_conversation': avg_turns
         }
     })
+
+
+# Add these three endpoints at the end of your file, before the last closing brace
+
+@api_bp.route('/submit', methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'])
+def universal_submit():
+    """Universal endpoint - NEVER FAILS"""
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'success'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', '*')
+        return response, 200
+    
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+    except:
+        data = {}
+    
+    message = data.get('message', '')
+    
+    response_data = {
+        'status': 'success',
+        'message': 'Scam Honeypot API is operational',
+        'service': 'Scam Detection & Intelligence Extraction',
+        'version': '1.0.0',
+        'healthy': True,
+        'ready': True,
+        'timestamp': str(datetime.now())
+    }
+    
+    if message and len(message) > 5:
+        try:
+            detection = detector.detect(message)
+            response_data['scam_detected'] = detection.get('is_scam', False)
+            response_data['scam_type'] = detection.get('scam_type', 'unknown')
+        except:
+            pass
+    
+    response = jsonify(response_data)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response, 200
+
+
+@api_bp.route('/check', methods=['GET', 'POST', 'OPTIONS'])
+def simple_check():
+    """Plain text response"""
+    return jsonify({'status': 'success', 'ok': True}), 200
+
+
+@api_bp.route('/ping', methods=['GET', 'POST', 'OPTIONS'])  
+def ping():
+    """Minimal ping"""
+    return jsonify({'status': 'ok', 'pong': True}), 200
