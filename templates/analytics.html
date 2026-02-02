@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Scam Honeypot{% endblock %}
+
+{% block content %}
+<div class="header">
+    <h1>📊 Scam Analytics</h1>
+    <p>Detailed breakdown of detected threats and extracted intelligence</p>
+</div>
+
+<div class="stats-grid" id="analyticsStats">
+    <div class="stat-card">
+        <h3 id="total_conversations">0</h3>
+        <p>Total Conversations</p>
+    </div>
+    <div class="stat-card">
+        <h3 id="total_intel_items">0</h3>
+        <p>Intelligence Items</p>
+    </div>
+    <div class="stat-card">
+        <h3 id="avg_turns">0</h3>
+        <p>Avg. Turns per Conv.</p>
+    </div>
+</div>
+
+<div class="test-area">
+    <h2>🎯 Scam Type Breakdown</h2>
+    <div id="typeBreakdown" class="samples">
+        <p>Loading analytics data...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadAnalytics() {
+        const { BASE_URL, API_KEY } = window.API_CONFIG || {
+            BASE_URL: 'https://scam-honeypot-n8bs.onrender.com',
+            API_KEY: 'scam-honeypot-secret-key-12345'
+        };
+
+        try {
+            const response = await fetch(`${BASE_URL}/api/stats`, {
+                method: 'GET',
+                headers: {
+                    'X-API-Key': API_KEY
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                const s = data.stats;
+                // Update basic stats
+                document.getElementById('total_conversations').textContent = s.total_conversations;
+                document.getElementById('total_intel_items').textContent = s.total_intel_items;
+                document.getElementById('avg_turns').textContent = s.avg_turns_per_conversation.toFixed(1);
+
+                // Update Scam Type Cards
+                const breakdownDiv = document.getElementById('typeBreakdown');
+                breakdownDiv.innerHTML = ''; // Clear loading text
+                
+                for (const [type, count] of Object.entries(s.scam_types_breakdown)) {
+                    breakdownDiv.innerHTML += `
+                        <div class="sample-card">
+                            <h4>${type.toUpperCase()}</h4>
+                            <p>Detected ${count} times</p>
+                        </div>
+                    `;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+            document.getElementById('typeBreakdown').innerHTML = '<p>Error loading stats. Check console.</p>';
+        }
+    }
+
+    // Load data when page opens
+    loadAnalytics();
+</script>
+{% endblock %}
