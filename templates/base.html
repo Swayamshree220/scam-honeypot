@@ -20,6 +20,13 @@
     <main class="container">
         {% block content %}{% endblock %}
     </main>
+
+    <script>
+        window.API_CONFIG = {
+            BASE_URL: 'https://scam-honeypot-n8bs.onrender.com',
+            API_KEY: 'scam-honeypot-secret-key-12345'
+        };
+    </script>
     
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
