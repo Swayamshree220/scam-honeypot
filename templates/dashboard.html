@@ -503,8 +503,11 @@ Try the sample messages above or paste your own!">Congratulations! You have won 
         </div>
     </div>
 
-    <script>
+
+<script>
     // Configuration
+    // 1. ADDED BASE_URL: This points directly to your backend server
+    const BASE_URL = 'https://scam-honeypot-n8bs.onrender.com'; 
     const API_KEY = 'scam-honeypot-secret-key-12345';
     
     // Sample scam messages
@@ -525,7 +528,8 @@ Try the sample messages above or paste your own!">Congratulations! You have won 
 
     // Helper function to make API calls
     async function apiCall(endpoint, data) {
-        const response = await fetch(`/api/${endpoint}`, {
+        // 2. UPDATED FETCH: Now uses the full URL like Postman does
+        const response = await fetch(`${BASE_URL}/api/${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -606,7 +610,8 @@ Try the sample messages above or paste your own!">Congratulations! You have won 
                 <div class="conversation-box">
                     <div class="message message-scammer">
                         <strong>❌ Error</strong>
-                        ${error.message}
+                        <p>${error.message}</p>
+                        <small>Check if the backend server is awake at Render.com</small>
                     </div>
                 </div>
             `;
@@ -727,7 +732,6 @@ Try the sample messages above or paste your own!">Congratulations! You have won 
         `;
     }
 
-    // Count extracted intel items
     function countIntel(intel) {
         let count = 0;
         for (let key in intel) {
@@ -738,7 +742,6 @@ Try the sample messages above or paste your own!">Congratulations! You have won 
         return count;
     }
 
-    // Update statistics
     function updateStats() {
         document.getElementById('totalScams').textContent = stats.totalScams;
         document.getElementById('totalIntel').textContent = stats.totalIntel;
@@ -746,7 +749,6 @@ Try the sample messages above or paste your own!">Congratulations! You have won 
         document.getElementById('successRate').textContent = stats.totalScams > 0 ? '100%' : '0%';
     }
 
-    // Clear results
     function clearResults() {
         if (confirm('Clear current conversation?')) {
             currentConvId = null;
@@ -762,8 +764,9 @@ Try the sample messages above or paste your own!">Congratulations! You have won 
         }
     }
 
-    // Initialize
     updateStats();
 </script>
+
+    
 </body>
 </html>
