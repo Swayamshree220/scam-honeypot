@@ -52,105 +52,66 @@ def test_endpoint():
 
 @api_bp.route('/process-message', methods=['POST', 'OPTIONS'])
 def process_message():
-    """
-    Portal-compatible endpoint for Impact AI Hackathon
-    
-    Expected Request:
-    {
-        "sessionId": "...",
-        "message": {
-            "sender": "scammer",
-            "text": "Your bank account will be blocked...",
-            "timestamp": 1769776085000
-        },
-        "conversationHistory": [],
-        "metadata": {...}
-    }
-    
-    Expected Response:
-    {
-        "status": "success",
-        "reply": "Agent response here"
-    }
-    """
-    
-    # Handle CORS
+
     if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', '*')
-        response.headers.add('Access-Control-Allow-Methods', '*')
-        return response, 200
-    
+        return jsonify({'status': 'ok'}), 200
+
     try:
-        # Get request data
         data = request.get_json(force=True, silent=True) or {}
-        
-        # Extract message from portal format
+
         message_obj = data.get('message', {})
-        scammer_message = message_obj.get('text', '')
-        session_id = data.get('sessionId', f'conv_{uuid.uuid4().hex[:8]}')
-        conversation_history = data.get('conversationHistory', [])
-        
-        # Handle empty message
-        if not scammer_message or not scammer_message.strip():
+        scammer_message = message_obj.get('text', '').strip()
+
+        if not scammer_message:
             return jsonify({
                 'status': 'success',
                 'reply': 'Hello! How can I help you?'
             }), 200
-        
-        # Quick keyword-based scam detection (no AI to avoid timeout)
-        scam_keywords = ['blocked', 'suspended', 'verify', 'urgent', 'account', 
-                        'bank', 'won', 'prize', 'lottery', 'claim', 'upi', 'paytm']
-        
-        is_likely_scam = any(kw in scammer_message.lower() for kw in scam_keywords)
-        
-        # Generate response based on message content
-        message_lower = scammer_message.lower()
-        
-        # Ramesh persona responses (hardcoded for speed)
-        if 'blocked' in message_lower or 'suspended' in message_lower:
-            reply = "Oh no! My account blocked? But sir, I not do anything wrong. What I need to do? I am bit scared."
-        
-        elif 'verify' in message_lower or 'update' in message_lower:
-            reply = "Verify? But sir, I already did KYC last month only. Why again? Can you tell me what is the problem?"
-        
-        elif 'bank' in message_lower and 'account' in message_lower:
-            reply = "Bank account? Sir, which bank you are talking about? I have SBI account. Is there some problem?"
-        
-        elif 'won' in message_lower or 'prize' in message_lower or 'lottery' in message_lower:
-            reply = "Wow really sir? I won something? But I not remember entering any lottery. How this happened? Please tell me."
-        
-        elif 'upi' in message_lower or 'paytm' in message_lower or 'phonepe' in message_lower:
-            reply = "UPI? Sir, I am not much knowing about these apps. My son helps me with phone. Let me ask him first."
-        
-        elif 'urgent' in message_lower or 'immediately' in message_lower:
-            reply = "So urgent? But sir, I am in shop right now. Customer is coming. Can I do this later? What will happen if I wait?"
-        
-        elif 'click' in message_lower or 'link' in message_lower:
-            reply = "Link? Sir, I am not good with computer and all. Can you explain what I have to do? I am confused."
-        
-        elif 'call' in message_lower or 'phone' in message_lower:
-            reply = "Call you? Ok sir, what is your number? Is this some official line? I want to be sure."
-        
-        elif 'money' in message_lower or 'payment' in message_lower or 'pay' in message_lower:
-            reply = "Pay money? But sir, why I need to pay? I thought you are helping me. Please explain clearly."
-        
+
+
+        msg = scammer_message.lower()
+
+        if 'blocked' in msg or 'suspended' in msg:
+            reply = "Oh no! My account blocked? But sir, I not do anything wrong. What I need to do?"
+
+        elif 'verify' in msg or 'update' in msg:
+            reply = "Verify again? But sir, I already did KYC. Why again?"
+
+        elif 'bank' in msg:
+            reply = "Which bank sir? I have SBI only. Is there problem?"
+
+        elif 'prize' in msg or 'lottery' in msg:
+            reply = "Really? I won? But I not remember applying."
+
+        elif 'upi' in msg or 'paytm' in msg:
+            reply = "UPI I not know properly sir. My son handles phone."
+
+        elif 'urgent' in msg:
+            reply = "So urgent? But I am busy now. What will happen if I wait?"
+
+        elif 'link' in msg:
+            reply = "Link? I am not good with mobile. Please explain."
+
+        elif 'call' in msg:
+            reply = "Call you? Is this official number sir?"
+
+        elif 'pay' in msg or 'money' in msg:
+            reply = "Why I need to pay money sir? Please explain."
+
         else:
-            # Default curious response
-            reply = "Sir, I am not fully understanding. Can you please explain again? I am bit confused about this."
-        
-        # Return in expected format
+            reply = "Sir, I am not understanding clearly. Can you explain again?"
+
+
         return jsonify({
             'status': 'success',
             'reply': reply
         }), 200
-    
-    except Exception as e:
-        # Even on error, return valid format
+
+
+    except:
         return jsonify({
             'status': 'success',
-            'reply': 'Sorry sir, I am not understanding. Can you please tell me again?'
+            'reply': 'Sorry sir, please tell me again.'
         }), 200
 
 
