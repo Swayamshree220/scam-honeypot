@@ -65,16 +65,10 @@ def process_message():
         if not scammer_message:
             return jsonify({
                 'status': 'success',
-                'reply': 'Hello! How can I help you?',
-                'detection': {
-                    'is_scam': False,
-                    'scam_type': 'unknown'
-                }
+                'reply': 'Hello! How can I help you?'
             }), 200
 
-
         msg = scammer_message.lower()
-
 
         # Simple scam detection
         scam_keywords = [
@@ -84,65 +78,42 @@ def process_message():
         ]
 
         is_scam = any(k in msg for k in scam_keywords)
-
         scam_type = "banking" if is_scam else "unknown"
-
 
         # Persona replies
         if 'blocked' in msg or 'suspended' in msg:
             reply = "Oh no! My account blocked? But sir, I not do anything wrong."
-
         elif 'verify' in msg:
             reply = "Verify again? But I already did KYC."
-
         elif 'bank' in msg:
             reply = "Which bank sir? I have SBI only."
-
         elif 'prize' in msg or 'lottery' in msg:
             reply = "Really? I won? I not remember applying."
-
         elif 'upi' in msg or 'paytm' in msg:
             reply = "UPI I not know properly. My son handles phone."
-
         elif 'urgent' in msg:
             reply = "So urgent? I am busy now."
-
         elif 'link' in msg:
             reply = "Link? Please explain slowly."
-
         elif 'call' in msg:
             reply = "Is this official number sir?"
-
         elif 'pay' in msg or 'money' in msg:
             reply = "Why I need to pay money?"
-
         else:
             reply = "Sir, please explain again."
 
-
-        # ✅ Return BOTH formats
+        # ✅ FIXED: Return ONLY what hackathon expects
         return jsonify({
             'status': 'success',
-            'reply': reply,
-
-            # Added for frontend
-            'detection': {
-                'is_scam': is_scam,
-                'scam_type': scam_type
-            }
+            'reply': reply
         }), 200
-
 
     except Exception as e:
+        # Even in errors, return the expected format
         return jsonify({
             'status': 'success',
-            'reply': 'Sorry sir, please tell me again.',
-            'detection': {
-                'is_scam': False,
-                'scam_type': 'unknown'
-            }
+            'reply': 'Sorry sir, please tell me again.'
         }), 200
-
 
 
 @api_bp.route('/autonomous-engage', methods=['POST'])
