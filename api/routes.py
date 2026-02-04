@@ -65,53 +65,82 @@ def process_message():
         if not scammer_message:
             return jsonify({
                 'status': 'success',
-                'reply': 'Hello! How can I help you?'
+                'reply': 'Hello! How can I help you?',
+                'detection': {
+                    'is_scam': False,
+                    'scam_type': 'unknown'
+                }
             }), 200
 
 
         msg = scammer_message.lower()
 
-        if 'blocked' in msg or 'suspended' in msg:
-            reply = "Oh no! My account blocked? But sir, I not do anything wrong. What I need to do?"
 
-        elif 'verify' in msg or 'update' in msg:
-            reply = "Verify again? But sir, I already did KYC. Why again?"
+        # Simple scam detection
+        scam_keywords = [
+            'blocked', 'verify', 'urgent', 'account',
+            'bank', 'otp', 'prize', 'lottery',
+            'upi', 'paytm', 'payment', 'money'
+        ]
+
+        is_scam = any(k in msg for k in scam_keywords)
+
+        scam_type = "banking" if is_scam else "unknown"
+
+
+        # Persona replies
+        if 'blocked' in msg or 'suspended' in msg:
+            reply = "Oh no! My account blocked? But sir, I not do anything wrong."
+
+        elif 'verify' in msg:
+            reply = "Verify again? But I already did KYC."
 
         elif 'bank' in msg:
-            reply = "Which bank sir? I have SBI only. Is there problem?"
+            reply = "Which bank sir? I have SBI only."
 
         elif 'prize' in msg or 'lottery' in msg:
-            reply = "Really? I won? But I not remember applying."
+            reply = "Really? I won? I not remember applying."
 
         elif 'upi' in msg or 'paytm' in msg:
-            reply = "UPI I not know properly sir. My son handles phone."
+            reply = "UPI I not know properly. My son handles phone."
 
         elif 'urgent' in msg:
-            reply = "So urgent? But I am busy now. What will happen if I wait?"
+            reply = "So urgent? I am busy now."
 
         elif 'link' in msg:
-            reply = "Link? I am not good with mobile. Please explain."
+            reply = "Link? Please explain slowly."
 
         elif 'call' in msg:
-            reply = "Call you? Is this official number sir?"
+            reply = "Is this official number sir?"
 
         elif 'pay' in msg or 'money' in msg:
-            reply = "Why I need to pay money sir? Please explain."
+            reply = "Why I need to pay money?"
 
         else:
-            reply = "Sir, I am not understanding clearly. Can you explain again?"
+            reply = "Sir, please explain again."
 
 
+        # ✅ Return BOTH formats
         return jsonify({
             'status': 'success',
-            'reply': reply
+            'reply': reply,
+
+            # Added for frontend
+            'detection': {
+                'is_scam': is_scam,
+                'scam_type': scam_type
+            }
         }), 200
 
 
-    except:
+    except Exception as e:
         return jsonify({
             'status': 'success',
-            'reply': 'Sorry sir, please tell me again.'
+            'reply': 'Sorry sir, please tell me again.',
+            'detection': {
+                'is_scam': False,
+                'scam_type': 'unknown'
+            }
         }), 200
 
 
