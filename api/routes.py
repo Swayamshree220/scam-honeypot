@@ -1,18 +1,51 @@
 from flask import Blueprint, request, jsonify
-from detection.detector import ScamDetector
-from extraction.extractor import IntelligenceExtractor
-from personas.ramesh import RameshPersona
-from storage.memory_store import conversation_store
-from .mock_scammer import mock_scammer_api
 from utils.auth import require_api_key
 from datetime import datetime
 import uuid
 
 api_bp = Blueprint('api', __name__)
 
-detector = ScamDetector()
-extractor = IntelligenceExtractor()
-persona = RameshPersona()
+# Lazy-load heavy dependencies only when needed
+_detector = None
+_extractor = None
+_persona = None
+_conversation_store = None
+_mock_scammer_api = None
+
+def get_detector():
+    global _detector
+    if _detector is None:
+        from detection.detector import ScamDetector
+        _detector = ScamDetector()
+    return _detector
+
+def get_extractor():
+    global _extractor
+    if _extractor is None:
+        from extraction.extractor import IntelligenceExtractor
+        _extractor = IntelligenceExtractor()
+    return _extractor
+
+def get_persona():
+    global _persona
+    if _persona is None:
+        from personas.ramesh import RameshPersona
+        _persona = RameshPersona()
+    return _persona
+
+def get_conversation_store():
+    global _conversation_store
+    if _conversation_store is None:
+        from storage.memory_store import conversation_store
+        _conversation_store = conversation_store
+    return _conversation_store
+
+def get_mock_scammer():
+    global _mock_scammer_api
+    if _mock_scammer_api is None:
+        from .mock_scammer import mock_scammer_api
+        _mock_scammer_api = mock_scammer_api
+    return _mock_scammer_api
 
 @api_bp.route('/health', methods=['GET'])
 def health_check():
@@ -121,13 +154,13 @@ def process_message():
 def autonomous_engage():
     """
     Autonomous engagement endpoint - AI handles full conversation
-    
+
     Request Body:
         {
             "initial_message": "Scam message",
             "max_turns": 5 (default)
         }
-    
+
     Response:
         {
             "status": "success",
@@ -137,58 +170,65 @@ def autonomous_engage():
             "summary": "..."
         }
     """
+    # Lazy-load heavy dependencies
+    detector = get_detector()
+    extractor = get_extractor()
+    persona = get_persona()
+    conversation_store = get_conversation_store()
+    mock_scammer_api = get_mock_scammer()
+
     data = request.json
-    
+
     if not data or 'initial_message' not in data:
         return jsonify({
             'error': 'Missing required field',
             'message': 'Request body must include "initial_message" field'
         }), 400
-    
+
     initial_message = data.get('initial_message')
     max_turns = data.get('max_turns', 5)
     conv_id = f'conv_{uuid.uuid4().hex[:8]}'
-    
+
     # Step 1: Detect scam
     detection = detector.detect(initial_message)
-    
+
     if not detection['is_scam']:
         return jsonify({
             'status': 'not_a_scam',
             'message': 'Message does not appear to be a scam'
         })
-    
+
     # Step 2: Create conversation
     conversation = conversation_store.create(conv_id)
     conversation['scam_type'] = detection['scam_type']
-    
+
     # Step 3: Autonomous engagement loop
     current_scammer_msg = initial_message
-    
+
     for turn in range(max_turns):
         # Agent responds
         agent_response = persona.generate_response(current_scammer_msg, conversation)
         conversation_store.add_turn(conv_id, current_scammer_msg, agent_response)
-        
+
         # Get scammer's next message
         scammer_response = mock_scammer_api.send_message(conv_id, agent_response)
         current_scammer_msg = scammer_response.get('message')
-        
+
         if not current_scammer_msg:
             break
-        
+
         # Check if we've extracted enough intelligence
         intel = extractor.extract(conversation)
         if len(intel.get('upi_ids', [])) > 0 or len(intel.get('bank_accounts', [])) > 0:
             # Got what we need, can stop early
             if turn >= 2:  # At least 3 turns
                 break
-    
+
     # Final intelligence extraction
     final_intel = extractor.extract(conversation)
     conversation['extracted_intel'] = final_intel
     conversation['status'] = 'completed'
-    
+
     return jsonify({
         'status': 'success',
         'conversation_id': conv_id,
@@ -204,6 +244,7 @@ def autonomous_engage():
 @require_api_key
 def get_conversations():
     """Get all conversations"""
+    conversation_store = get_conversation_store()
     return jsonify({
         'status': 'success',
         'conversations': conversation_store.get_all(),
@@ -214,14 +255,15 @@ def get_conversations():
 @require_api_key
 def get_conversation(conv_id):
     """Get specific conversation"""
+    conversation_store = get_conversation_store()
     conversation = conversation_store.get(conv_id)
-    
+
     if not conversation:
         return jsonify({
             'error': 'Not found',
             'message': f'Conversation {conv_id} not found'
         }), 404
-    
+
     return jsonify({
         'status': 'success',
         'conversation': conversation
@@ -231,25 +273,26 @@ def get_conversation(conv_id):
 @require_api_key
 def get_stats():
     """Get statistics"""
+    conversation_store = get_conversation_store()
     stats = conversation_store.get_stats()
-    
+
     # Calculate additional stats
     all_convs = conversation_store.get_all()
-    
+
     total_intel = 0
     scam_types = {}
-    
+
     for conv in all_convs:
         intel = conv.get('extracted_intel', {})
         total_intel += sum(len(v) for v in intel.values())
-        
+
         scam_type = conv.get('scam_type', 'unknown')
         scam_types[scam_type] = scam_types.get(scam_type, 0) + 1
-    
+
     # Calculate average turns
     total_turns = sum(len(c.get('history', [])) for c in all_convs)
     avg_turns = total_turns / max(len(all_convs), 1)
-    
+
     return jsonify({
         'status': 'success',
         'stats': {
